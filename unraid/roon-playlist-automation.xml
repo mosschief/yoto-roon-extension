@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>roon-playlist-automation</Name>
+  <Repository>ghcr.io/mosschief/roon-playlist-automation:latest</Repository>
+  <Registry>https://ghcr.io/mosschief/roon-playlist-automation</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/mosschief/yoto-roon-extension/issues</Support>
+  <Project>https://github.com/mosschief/yoto-roon-extension</Project>
+  <Overview>
+    Automatically maintains playlists in Roon from Pitchfork Best New Music and Aquarium Drunkard's Spotify playlists.
+    Roon's API cannot create playlists, so this syncs picks into a TIDAL (or Qobuz) playlist, which Roon then imports from your linked streaming account.
+
+    Setup:
+    1. Create a TIDAL app at developer.tidal.com/dashboard with redirect URI http://127.0.0.1:8976/callback and paste the client ID below.
+    2. Create a Spotify app at developer.spotify.com/dashboard (read-only; used to mirror Aquarium Drunkard playlists) and paste its ID/secret below.
+    3. List the Aquarium Drunkard Spotify playlist IDs to mirror (comma-separated).
+    4. Start the container, open its console, and run: node src/index.js auth-tidal (one-time TIDAL login — see the project's UNRAID.md for the SSH-tunnel step, or copy a tidal-tokens.json created on your desktop into the data share).
+
+    Syncs on start and then every LOOP_INTERVAL_HOURS.
+  </Overview>
+  <Category>MediaApp:Music</Category>
+  <TemplateURL>https://raw.githubusercontent.com/mosschief/yoto-roon-extension/refs/heads/claude/roon-plugin-playlist-automation-v3c80d/unraid/roon-playlist-automation.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/mosschief/yoto-roon-extension/refs/heads/claude/roon-plugin-playlist-automation-v3c80d/unraid/icon.svg</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <Config Name="Data (tokens and sync state)" Target="/app/data" Default="/mnt/user/appdata/roon-playlist-automation" Mode="rw" Description="Stores TIDAL tokens and which tracks were already added." Type="Path" Display="always" Required="true" Mask="false"/>
+  <Config Name="TIDAL auth callback port" Target="8976" Default="8976" Mode="tcp" Description="Only used during the one-time 'auth-tidal' login." Type="Port" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="TIDAL_CLIENT_ID" Target="TIDAL_CLIENT_ID" Default="" Description="Client ID of your app from developer.tidal.com/dashboard (add redirect URI http://127.0.0.1:8976/callback to the app)." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="SPOTIFY_CLIENT_ID" Target="SPOTIFY_CLIENT_ID" Default="" Description="Spotify app client ID (developer.spotify.com/dashboard). Needed for the Aquarium Drunkard mirror." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="SPOTIFY_CLIENT_SECRET" Target="SPOTIFY_CLIENT_SECRET" Default="" Description="Spotify app client secret." Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="AD_SPOTIFY_PLAYLIST_IDS" Target="AD_SPOTIFY_PLAYLIST_IDS" Default="" Description="Comma-separated Spotify playlist IDs to mirror (the part after /playlist/ in a share link). Find Aquarium Drunkard's at open.spotify.com/user/aquariumdrunkard." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="PROVIDER" Target="PROVIDER" Default="tidal" Description="Where the playlists are created: tidal or qobuz." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="COUNTRY_CODE" Target="COUNTRY_CODE" Default="US" Description="TIDAL catalog country code." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="LOOP_INTERVAL_HOURS" Target="LOOP_INTERVAL_HOURS" Default="12" Description="Hours between syncs." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PITCHFORK_ENABLED" Target="PITCHFORK_ENABLED" Default="true" Description="Maintain the Pitchfork: Best New Music playlist." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PITCHFORK_INCLUDE_ALBUMS" Target="PITCHFORK_INCLUDE_ALBUMS" Default="true" Description="Expand Best New Albums into their tracks." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PITCHFORK_INCLUDE_TRACKS" Target="PITCHFORK_INCLUDE_TRACKS" Default="true" Description="Include Best New Tracks." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PITCHFORK_MAX_TRACKS_PER_ALBUM" Target="PITCHFORK_MAX_TRACKS_PER_ALBUM" Default="0" Description="Cap tracks added per BNM album (0 = all)." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PITCHFORK_PLAYLIST_NAME" Target="PITCHFORK_PLAYLIST_NAME" Default="Pitchfork: Best New Music" Description="Name of the Pitchfork playlist." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="AD_ENABLED" Target="AD_ENABLED" Default="true" Description="Maintain the Aquarium Drunkard playlist." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="AD_PLAYLIST_NAME" Target="AD_PLAYLIST_NAME" Default="Aquarium Drunkard" Description="Name of the Aquarium Drunkard playlist." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="QOBUZ_APP_ID" Target="QOBUZ_APP_ID" Default="" Description="Only for PROVIDER=qobuz." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="QOBUZ_USERNAME" Target="QOBUZ_USERNAME" Default="" Description="Only for PROVIDER=qobuz." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="QOBUZ_PASSWORD" Target="QOBUZ_PASSWORD" Default="" Description="Only for PROVIDER=qobuz." Type="Variable" Display="advanced" Required="false" Mask="true"/>
+</Container>

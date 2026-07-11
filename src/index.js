@@ -22,17 +22,22 @@ async function main() {
     const idx = rest.indexOf('--interval-hours');
     const hours = idx !== -1 ? Number(rest[idx + 1]) : config.loopIntervalHours || 12;
 
-    await runSync(config);
-    while (loop) {
-      log.info(`Next sync in ${hours}h.`);
-      await new Promise((r) => setTimeout(r, hours * 3600 * 1000));
+    if (!loop) {
+      await runSync(config);
+      return;
+    }
+    // In loop mode (e.g. as an always-on container) a failed sync — including
+    // the first one — is logged and retried on the next tick instead of
+    // crashing the process.
+    for (;;) {
       try {
         await runSync(config);
       } catch (err) {
         log.error(`Sync failed: ${err.message}`);
       }
+      log.info(`Next sync in ${hours}h.`);
+      await new Promise((r) => setTimeout(r, hours * 3600 * 1000));
     }
-    return;
   }
 
   console.log(USAGE);

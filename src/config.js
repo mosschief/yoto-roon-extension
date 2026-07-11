@@ -14,6 +14,45 @@ function loadDotEnv(file) {
   }
 }
 
+function envStr(name, fallback) {
+  const v = process.env[name];
+  return v === undefined || v === '' ? fallback : v;
+}
+
+function envBool(name, fallback) {
+  const v = process.env[name];
+  return v === undefined || v === '' ? fallback : /^(1|true|yes|on)$/i.test(v);
+}
+
+function envNum(name, fallback) {
+  const v = Number(process.env[name]);
+  return Number.isFinite(v) && process.env[name] !== '' && process.env[name] !== undefined ? v : fallback;
+}
+
+/**
+ * Settings may come from config.json or from environment variables
+ * (environment wins). The env names exist so Docker/Unraid deployments can be
+ * configured entirely from the container template with no file edits.
+ */
+function applyEnvOverrides(config) {
+  config.provider = envStr('PROVIDER', config.provider);
+  config.countryCode = envStr('COUNTRY_CODE', config.countryCode);
+  config.loopIntervalHours = envNum('LOOP_INTERVAL_HOURS', config.loopIntervalHours);
+
+  const pf = (config.pitchfork ??= {});
+  pf.enabled = envBool('PITCHFORK_ENABLED', pf.enabled);
+  pf.playlistName = envStr('PITCHFORK_PLAYLIST_NAME', pf.playlistName);
+  pf.includeAlbums = envBool('PITCHFORK_INCLUDE_ALBUMS', pf.includeAlbums);
+  pf.includeTracks = envBool('PITCHFORK_INCLUDE_TRACKS', pf.includeTracks);
+  pf.maxTracksPerAlbum = envNum('PITCHFORK_MAX_TRACKS_PER_ALBUM', pf.maxTracksPerAlbum);
+
+  const ad = (config.aquariumDrunkard ??= {});
+  ad.enabled = envBool('AD_ENABLED', ad.enabled);
+  ad.playlistName = envStr('AD_PLAYLIST_NAME', ad.playlistName);
+  const ids = envStr('AD_SPOTIFY_PLAYLIST_IDS', '');
+  if (ids) ad.spotifyPlaylistIds = ids.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
 export function loadConfig() {
   loadDotEnv(path.join(ROOT, '.env'));
 
@@ -21,6 +60,7 @@ export function loadConfig() {
   const exampleFile = path.join(ROOT, 'config.example.json');
   const file = fs.existsSync(configFile) ? configFile : exampleFile;
   const config = JSON.parse(fs.readFileSync(file, 'utf8'));
+  applyEnvOverrides(config);
 
   config.rootDir = ROOT;
   config.dataDir = path.join(ROOT, 'data');

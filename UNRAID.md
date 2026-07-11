@@ -1,5 +1,60 @@
 # Running on Unraid
 
+Two ways to run this on Unraid:
+
+- **[A. As an Unraid app (Docker template)](#a-install-as-an-unraid-app--recommended)** — point-and-click install from the Docker tab, configured entirely through the template's fields. Recommended.
+- **[B. Manual (bind-mounted repo + User Scripts cron)](#b-manual-setup-bind-mounted-repo)** — no prebuilt image needed; runs the code straight from appdata.
+
+## A. Install as an Unraid app — recommended
+
+A prebuilt image is published to `ghcr.io/mosschief/roon-playlist-automation`
+by CI, and an Unraid template lives in [`unraid/roon-playlist-automation.xml`](unraid/roon-playlist-automation.xml).
+
+> One-time prerequisite: the GHCR package must be **public** for Unraid to
+> pull it anonymously. After the first CI build, check
+> github.com → your profile → Packages → `roon-playlist-automation` →
+> Package settings → Change visibility → Public.
+
+1. In Unraid, go to the **Docker** tab, scroll to the bottom, and add this to
+   **Template Repositories**, then Save:
+
+   ```
+   https://github.com/mosschief/yoto-roon-extension
+   ```
+
+2. Click **Add Container** and pick `roon-playlist-automation` from the
+   template dropdown (under *User templates*).
+
+3. Fill in the fields — they map 1:1 to what the README describes:
+   - `TIDAL_CLIENT_ID` — from [developer.tidal.com/dashboard](https://developer.tidal.com/dashboard) (add `http://127.0.0.1:8976/callback` as a redirect URI in the TIDAL app).
+   - `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` — from [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard).
+   - `AD_SPOTIFY_PLAYLIST_IDS` — comma-separated playlist IDs from [AD's Spotify profile](https://open.spotify.com/user/aquariumdrunkard).
+   - Everything else (provider, sync interval, playlist names, per-album track cap) is under *Show more settings* with sensible defaults.
+
+4. Apply. The container starts in loop mode (sync on start, then every
+   `LOOP_INTERVAL_HOURS`). The first TIDAL sync will fail with
+   `No TIDAL tokens found` until you do the **one-time TIDAL login** — see
+   [step 2 of the manual setup](#2-one-time-tidal-login) below; for the
+   template install, Option B's command becomes: open the container's
+   **Console** (click its icon → Console) and run
+   `node src/index.js auth-tidal`, with the same SSH tunnel from your desktop
+   (the template already publishes port 8976). Or just copy a
+   `tidal-tokens.json` made on your desktop into
+   `/mnt/user/appdata/roon-playlist-automation/`, which is mounted at
+   `/app/data`.
+
+5. Restart the container and watch its log: you should see the fetches and
+   `added ...` lines. Then force a service sync in Roon
+   (**Settings → Services → TIDAL → Sync library now**).
+
+To publish it for *all* Unraid users in Community Applications search, the
+template repo has to be registered with the CA maintainers — see the
+[CA application policies thread](https://forums.unraid.net/topic/87144-ca-application-policies-notes/)
+(requires a support thread and a moderation pass). The template above works
+privately without any of that.
+
+## B. Manual setup (bind-mounted repo)
+
 Unraid doesn't ship Node, so everything runs through Docker using the stock
 `node:22-alpine` image with the repo bind-mounted — no image build needed, and
 all config/state lives in your appdata share.

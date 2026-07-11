@@ -75,16 +75,29 @@ For unattended operation, prefer cron on the machine that runs your Roon core (o
 
 Playlists appear in Roon under **Playlists** after Roon's next streaming-service sync (you can force it in Roon via Settings → Services → Sync library now).
 
-## Config reference (`config.json`)
+## Config reference
 
-| Key | Default | Meaning |
-|---|---|---|
-| `provider` | `tidal` | `tidal` or `qobuz` |
-| `countryCode` | `US` | TIDAL catalog country |
-| `loopIntervalHours` | `12` | interval for `--loop` mode |
-| `pitchfork.includeAlbums` / `includeTracks` | `true` | which BNM feeds to use |
-| `pitchfork.maxTracksPerAlbum` | `0` (all) | cap tracks added per BNM album |
-| `aquariumDrunkard.spotifyPlaylistIds` | `[]` | AD playlists to mirror |
+Every setting can come from `config.json` or an environment variable
+(environment wins — handy for Docker/Unraid where you configure the container
+instead of editing files):
+
+| `config.json` key | Env variable | Default | Meaning |
+|---|---|---|---|
+| `provider` | `PROVIDER` | `tidal` | `tidal` or `qobuz` |
+| `countryCode` | `COUNTRY_CODE` | `US` | TIDAL catalog country |
+| `loopIntervalHours` | `LOOP_INTERVAL_HOURS` | `12` | interval for `--loop` mode |
+| `pitchfork.enabled` | `PITCHFORK_ENABLED` | `true` | maintain the BNM playlist |
+| `pitchfork.playlistName` | `PITCHFORK_PLAYLIST_NAME` | `Pitchfork: Best New Music` | playlist name |
+| `pitchfork.includeAlbums` / `includeTracks` | `PITCHFORK_INCLUDE_ALBUMS` / `_TRACKS` | `true` | which BNM feeds to use |
+| `pitchfork.maxTracksPerAlbum` | `PITCHFORK_MAX_TRACKS_PER_ALBUM` | `0` (all) | cap tracks added per BNM album |
+| `aquariumDrunkard.enabled` | `AD_ENABLED` | `true` | maintain the AD playlist |
+| `aquariumDrunkard.playlistName` | `AD_PLAYLIST_NAME` | `Aquarium Drunkard` | playlist name |
+| `aquariumDrunkard.spotifyPlaylistIds` | `AD_SPOTIFY_PLAYLIST_IDS` (comma-separated) | `[]` | AD playlists to mirror |
+
+A prebuilt container image is published to
+`ghcr.io/mosschief/roon-playlist-automation` (see `Dockerfile` and
+`.github/workflows/docker.yml`), and an Unraid Docker template lives in
+[`unraid/`](unraid/).
 
 ## Caveats
 
