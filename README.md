@@ -26,7 +26,7 @@ Syncing is **append-only with dedupe**: new picks are added, nothing is removed,
 
 ## Setup
 
-Requires Node ≥ 18.17. No npm dependencies.
+Requires Node ≥ 18.17. No npm dependencies. **Running it on an Unraid server? See [UNRAID.md](UNRAID.md)** for a Docker-based setup with scheduling.
 
 ```sh
 cp .env.example .env

@@ -1,0 +1,119 @@
+# Running on Unraid
+
+Unraid doesn't ship Node, so everything runs through Docker using the stock
+`node:22-alpine` image with the repo bind-mounted — no image build needed, and
+all config/state lives in your appdata share.
+
+## 1. Get the code onto the server
+
+Open the Unraid web terminal (top-right `>_` icon) and run:
+
+```sh
+cd /mnt/user/appdata
+mkdir roon-playlist-automation && cd roon-playlist-automation
+wget -qO- https://github.com/mosschief/yoto-roon-extension/archive/refs/heads/claude/roon-plugin-playlist-automation-v3c80d.tar.gz | tar xz --strip-components=1
+cp .env.example .env
+cp config.example.json config.json
+```
+
+(If you have git installed via NerdTools, `git clone` works too.)
+
+Edit the two config files — either with `nano` in the terminal or over SMB at
+`\\TOWER\appdata\roon-playlist-automation\`:
+
+- **`.env`** — your `TIDAL_CLIENT_ID` (from [developer.tidal.com/dashboard](https://developer.tidal.com/dashboard), with `http://127.0.0.1:8976/callback` added as a redirect URI) and `SPOTIFY_CLIENT_ID`/`SPOTIFY_CLIENT_SECRET` (from [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard)).
+- **`config.json`** — the Aquarium Drunkard Spotify playlist IDs you want to mirror, playlist names, etc. (see README).
+
+Then fix ownership so the container (run as Unraid's `nobody:users`) can write state:
+
+```sh
+chown -R 99:100 /mnt/user/appdata/roon-playlist-automation
+```
+
+## 2. One-time TIDAL login
+
+The TIDAL OAuth flow needs a browser to hit a short-lived callback server on
+port 8976. Two ways to do it — **A is easier** if you have Node on your
+desktop/laptop; **B** does it all on the server.
+
+**Option A — authorize on your desktop, copy the tokens.**
+On any machine with Node ≥ 18: clone the repo, create the same `.env`, run
+`npm run auth:tidal`, complete the login in your browser. Then copy the
+resulting `data/tidal-tokens.json` into
+`\\TOWER\appdata\roon-playlist-automation\data\`. Done — tokens refresh
+themselves from then on.
+
+**Option B — authorize on the server through an SSH tunnel.**
+
+1. In the Unraid terminal, start the auth flow with the port published:
+
+   ```sh
+   docker run --rm -it -p 8976:8976 --user 99:100 \
+     -v /mnt/user/appdata/roon-playlist-automation:/app -w /app \
+     node:22-alpine node src/index.js auth-tidal
+   ```
+
+2. On your desktop, open a tunnel so `127.0.0.1:8976` reaches the server
+   (TIDAL only redirects to loopback, hence the tunnel):
+
+   ```sh
+   ssh -N -L 8976:localhost:8976 root@YOUR-UNRAID-IP
+   ```
+
+3. Open the URL the container printed in your desktop browser and log in to
+   TIDAL. When the page says "Authorized", close the tunnel (Ctrl-C both).
+
+Qobuz and Spotify need no interactive login — credentials in `.env` are enough.
+
+## 3. Test a one-shot sync
+
+```sh
+docker run --rm --user 99:100 \
+  -v /mnt/user/appdata/roon-playlist-automation:/app -w /app \
+  node:22-alpine node src/index.js sync
+```
+
+You should see the Pitchfork/Spotify fetches and `added ...` lines. Check
+TIDAL (or Qobuz) — the playlists should exist. In Roon, force a service sync
+(**Settings → Services → TIDAL/Qobuz → Sync library now**) and they'll appear
+under **Playlists**.
+
+## 4. Schedule it
+
+**Recommended: User Scripts plugin (cron-style one-shot).**
+
+1. Install **User Scripts** from Community Applications if you don't have it.
+2. **Settings → User Scripts → Add New Script**, name it `roon-playlist-sync`,
+   and set its contents to:
+
+   ```sh
+   #!/bin/bash
+   docker run --rm --user 99:100 \
+     -v /mnt/user/appdata/roon-playlist-automation:/app -w /app \
+     node:22-alpine node src/index.js sync >> /mnt/user/appdata/roon-playlist-automation/sync.log 2>&1
+   ```
+
+3. Set the schedule to **Custom** with a cron like `0 7 * * *` (daily 7am).
+   Pitchfork posts BNM on weekday mornings; daily is plenty.
+
+**Alternative: always-on container (loop mode) via the Docker tab.**
+
+Docker tab → **Add Container** → toggle **Advanced View**:
+
+| Field | Value |
+|---|---|
+| Name | `roon-playlist-automation` |
+| Repository | `node:22-alpine` |
+| Post Arguments | `node /app/src/index.js sync --loop` |
+| Extra Parameters | `-w /app --user 99:100 --restart=unless-stopped` |
+| Add Path | Container: `/app` → Host: `/mnt/user/appdata/roon-playlist-automation` |
+
+It syncs on start and then every `loopIntervalHours` (config.json, default 12).
+Container logs show the sync output.
+
+## Troubleshooting
+
+- **`EACCES` writing `data/state.json`** — rerun the `chown -R 99:100 ...` from step 1 (files created over SMB or as root can lose the right ownership).
+- **Playlist exists in TIDAL but not Roon** — Roon only syncs streaming playlists periodically; force it via Settings → Services, and make sure the playlist is visible in your TIDAL account (the tool creates it as UNLISTED, which Roon still syncs since it's in your collection).
+- **`No TIDAL tokens found`** — step 2 didn't complete or `data/tidal-tokens.json` isn't in the mounted folder.
+- **Unmatched tracks** — look at `unmatched` inside `data/state.json`; items are retried on the next runs up to 5 times.

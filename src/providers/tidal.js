@@ -74,7 +74,10 @@ export class TidalProvider {
         err ? reject(new Error(`TIDAL authorization failed: ${err}`)) : resolve(c);
       });
       server.on('error', reject);
-      server.listen(port, url.hostname);
+      // Bind all interfaces (not just the loopback in the redirect URI) so the
+      // callback is reachable when this runs inside Docker with a published
+      // port; override with AUTH_BIND_HOST if you want it stricter.
+      server.listen(port, process.env.AUTH_BIND_HOST || '0.0.0.0');
     });
 
     const { data } = await request(TOKEN_URL, {
