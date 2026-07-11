@@ -1,0 +1,17 @@
+{
+  "provider": "tidal",
+  "countryCode": "US",
+  "loopIntervalHours": 12,
+  "pitchfork": {
+    "enabled": true,
+    "playlistName": "Pitchfork: Best New Music",
+    "includeAlbums": true,
+    "includeTracks": true,
+    "maxTracksPerAlbum": 0
+  },
+  "aquariumDrunkard": {
+    "enabled": true,
+    "playlistName": "Aquarium Drunkard",
+    "spotifyPlaylistIds": []
+  }
+}

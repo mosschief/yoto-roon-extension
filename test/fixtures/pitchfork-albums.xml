@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Best New Albums</title>
+    <link>https://pitchfork.com/reviews/best/albums/</link>
+    <item>
+      <title>Geese: Getting Killed</title>
+      <link>https://pitchfork.com/reviews/albums/geese-getting-killed/</link>
+      <guid isPermaLink="false">68b0e13fb0d1a1e94fed7f0a</guid>
+      <pubDate>Fri, 05 Sep 2025 04:01:00 +0000</pubDate>
+      <description><![CDATA[On its third album, the New York band harnesses its live-wire energy.]]></description>
+    </item>
+    <item>
+      <title>Sault &amp; Cleo Sol: 10</title>
+      <link>https://pitchfork.com/reviews/albums/sault-10/</link>
+      <guid isPermaLink="false">abc123</guid>
+      <pubDate>Mon, 01 Sep 2025 04:01:00 +0000</pubDate>
+      <description>Another surprise release.</description>
+    </item>
+    <item>
+      <title>Bj&#246;rk: Fossora: The Remixes</title>
+      <link>https://pitchfork.com/reviews/albums/bjork-fossora-remixes/</link>
+      <guid isPermaLink="false">def456</guid>
+      <pubDate>Sun, 31 Aug 2025 04:01:00 +0000</pubDate>
+      <description>Colon in the album name.</description>
+    </item>
+  </channel>
+</rss>

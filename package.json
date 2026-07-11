@@ -1,0 +1,15 @@
+{
+  "name": "roon-playlist-automation",
+  "version": "0.1.0",
+  "description": "Sync Pitchfork Best New Music and Aquarium Drunkard picks into a TIDAL or Qobuz playlist that shows up in Roon",
+  "type": "module",
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "sync": "node src/index.js sync",
+    "loop": "node src/index.js sync --loop",
+    "auth:tidal": "node src/index.js auth-tidal",
+    "test": "node --test"
+  }
+}
