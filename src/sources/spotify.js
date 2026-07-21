@@ -2,21 +2,30 @@ import { request } from '../http.js';
 
 const ACCOUNTS = 'https://accounts.spotify.com/api/token';
 const API = 'https://api.spotify.com/v1';
+const EMBED = 'https://open.spotify.com/embed/playlist/';
+const BROWSER_UA =
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 
 /**
- * Read-only Spotify client (client-credentials flow) used to mirror public
- * playlists such as Aquarium Drunkard's. No user login required.
+ * Reads public Spotify playlists (e.g. Aquarium Drunkard's) two ways:
+ *  - with SPOTIFY_CLIENT_ID/SECRET: the official API (richer data, incl. ISRC)
+ *  - without credentials: the public embed page, which serves the track list
+ *    as JSON — no Spotify account needed at all
  */
-export class SpotifyClient {
-  constructor({ clientId, clientSecret }) {
-    if (!clientId || !clientSecret) {
-      throw new Error('SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET are required to mirror Spotify playlists');
-    }
+export class SpotifySource {
+  constructor({ clientId, clientSecret } = {}) {
+    this.hasApi = Boolean(clientId && clientSecret);
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.token = null;
     this.tokenExpiresAt = 0;
   }
+
+  async getPlaylistTracks(playlistId) {
+    return this.hasApi ? this.#apiTracks(playlistId) : this.#embedTracks(playlistId);
+  }
+
+  // ---- official API (client-credentials) --------------------------------
 
   async #getToken() {
     if (this.token && Date.now() < this.tokenExpiresAt - 60_000) return this.token;
@@ -31,30 +40,15 @@ export class SpotifyClient {
     return this.token;
   }
 
-  async #get(path) {
+  async #apiTracks(playlistId) {
     const token = await this.#getToken();
-    const { data } = await request(`${API}${path}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return data;
-  }
-
-  async getPlaylistName(playlistId) {
-    const data = await this.#get(`/playlists/${playlistId}?fields=name`);
-    return data.name;
-  }
-
-  /**
-   * All tracks of a playlist as { id, artist, artists, title, album, isrc }.
-   * Skips local files and episodes.
-   */
-  async getPlaylistTracks(playlistId) {
     const tracks = [];
     const fields = 'items(track(id,name,is_local,type,external_ids(isrc),album(name),artists(name))),next';
     let offset = 0;
     for (;;) {
-      const data = await this.#get(
-        `/playlists/${playlistId}/tracks?limit=100&offset=${offset}&fields=${encodeURIComponent(fields)}`,
+      const { data } = await request(
+        `${API}/playlists/${playlistId}/tracks?limit=100&offset=${offset}&fields=${encodeURIComponent(fields)}`,
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       for (const item of data.items ?? []) {
         const t = item.track;
@@ -74,4 +68,65 @@ export class SpotifyClient {
     }
     return tracks;
   }
+
+  // ---- credential-free embed page ---------------------------------------
+
+  async #embedTracks(playlistId) {
+    const { data: html } = await request(`${EMBED}${playlistId}`, {
+      headers: { 'User-Agent': BROWSER_UA, Accept: 'text/html' },
+    });
+    const tracks = parseEmbedTracks(html);
+    if (!tracks) {
+      throw new Error(
+        `Could not parse the Spotify embed page for playlist ${playlistId}. ` +
+          'Spotify may have changed the page format — set SPOTIFY_CLIENT_ID/SPOTIFY_CLIENT_SECRET to use the official API instead.',
+      );
+    }
+    return tracks;
+  }
+}
+
+/** Depth-first search for a `trackList` array anywhere in the embed's JSON blob. */
+function findTrackList(node) {
+  if (!node || typeof node !== 'object') return null;
+  if (Array.isArray(node.trackList)) return node.trackList;
+  for (const value of Object.values(node)) {
+    const found = findTrackList(value);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * The embed page ships its data in a JSON <script> block; each track entry has
+ * { uri: "spotify:track:ID", title, subtitle (artist names) }. Exported for tests.
+ */
+export function parseEmbedTracks(html) {
+  const m = html.match(
+    /<script[^>]*id="__NEXT_DATA__"[^>]*type="application\/json"[^>]*>([\s\S]*?)<\/script>/,
+  );
+  if (!m) return null;
+  let data;
+  try {
+    data = JSON.parse(m[1]);
+  } catch {
+    return null;
+  }
+  const list = findTrackList(data);
+  if (!list) return null;
+  const tracks = [];
+  for (const item of list) {
+    const id = /^spotify:track:([A-Za-z0-9]+)$/.exec(item.uri ?? '')?.[1];
+    if (!id || !item.title) continue;
+    const artist = item.subtitle ?? '';
+    tracks.push({
+      id,
+      artist,
+      artists: artist.split(',').map((s) => s.trim()).filter(Boolean),
+      title: item.title,
+      album: '',
+      isrc: null,
+    });
+  }
+  return tracks;
 }

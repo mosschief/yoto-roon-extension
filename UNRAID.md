@@ -26,13 +26,15 @@ by CI, and an Unraid template lives in [`unraid/roon-playlist-automation.xml`](u
    template dropdown (under *User templates*).
 
 3. Fill in the fields — they map 1:1 to what the README describes:
-   - `TIDAL_CLIENT_ID` — from [developer.tidal.com/dashboard](https://developer.tidal.com/dashboard) (add `http://127.0.0.1:8976/callback` as a redirect URI in the TIDAL app).
-   - `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` — from [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard).
+   - **Qobuz users** (simplest path): set `PROVIDER` to `qobuz` (under *Show more settings*) and fill in `QOBUZ_USERNAME` / `QOBUZ_PASSWORD` — your normal Qobuz account. No developer signup, no TIDAL, no Spotify account needed; the Qobuz app id is auto-discovered and AD playlists are read via Spotify's public embed page.
+   - **TIDAL users**: `TIDAL_CLIENT_ID` — from [developer.tidal.com/dashboard](https://developer.tidal.com/dashboard) (add `http://127.0.0.1:8976/callback` as a redirect URI in the TIDAL app).
    - `AD_SPOTIFY_PLAYLIST_IDS` — comma-separated playlist IDs from [AD's Spotify profile](https://open.spotify.com/user/aquariumdrunkard).
-   - Everything else (provider, sync interval, playlist names, per-album track cap) is under *Show more settings* with sensible defaults.
+   - `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` — optional; only if you want the official Spotify API instead of the embed fallback (a free Spotify account suffices).
+   - Everything else (sync interval, playlist names, per-album track cap) is under *Show more settings* with sensible defaults.
 
 4. Apply. The container starts in loop mode (sync on start, then every
-   `LOOP_INTERVAL_HOURS`). The first TIDAL sync will fail with
+   `LOOP_INTERVAL_HOURS`). **Qobuz users are done at this point** — no
+   interactive login step. For TIDAL, the first sync will fail with
    `No TIDAL tokens found` until you do the **one-time TIDAL login** — see
    [step 2 of the manual setup](#2-one-time-tidal-login) below; for the
    template install, Option B's command becomes: open the container's

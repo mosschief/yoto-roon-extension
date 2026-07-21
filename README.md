@@ -42,12 +42,13 @@ cp config.example.json config.json
 3. Put the client ID in `.env` (`TIDAL_CLIENT_ID`).
 4. Run `npm run auth:tidal` and log in via the printed URL (once; tokens auto-refresh).
 
-**Qobuz:** set `"provider": "qobuz"` in `config.json` and fill in `QOBUZ_APP_ID`, `QOBUZ_USERNAME`, `QOBUZ_PASSWORD` in `.env`. Note Qobuz has no open developer signup — you need an `app_id` issued by Qobuz.
+**Qobuz:** set `"provider": "qobuz"` in `config.json` and fill in `QOBUZ_USERNAME` and `QOBUZ_PASSWORD` in `.env` — that's it. Qobuz has no open developer signup, so the required app id is auto-discovered from Qobuz's own web player on first run (and cached in `data/`); set `QOBUZ_APP_ID` manually only if that ever breaks. No TIDAL or Spotify account is needed in this mode.
 
-### 2. Spotify (read-only, for the Aquarium Drunkard mirror)
+### 2. Aquarium Drunkard source (Spotify — credentials optional)
 
-1. Create an app at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) and put its client ID/secret in `.env`.
-2. Pick the AD playlists you want to mirror from [open.spotify.com/user/aquariumdrunkard](https://open.spotify.com/user/aquariumdrunkard) (they post new ones [on the site](https://aquariumdrunkard.com/category/spotify/)). Copy each playlist's ID (the part after `/playlist/` in its share URL) into `config.json`:
+AD publishes its playlists on Spotify, but **you don't need a Spotify account**: without credentials the tool reads the public playlist via Spotify's embed page. For the more robust official API (also returns ISRCs, which improve TIDAL matching), create an app at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) — a free Spotify account is enough — and put its client ID/secret in `.env`.
+
+Either way, pick the AD playlists you want to mirror from [open.spotify.com/user/aquariumdrunkard](https://open.spotify.com/user/aquariumdrunkard) (they post new ones [on the site](https://aquariumdrunkard.com/category/spotify/)). Copy each playlist's ID (the part after `/playlist/` in its share URL) into `config.json`:
 
 ```json
 "aquariumDrunkard": {
@@ -104,7 +105,7 @@ A prebuilt container image is published to
 - **Append-only.** Removing a track from an AD Spotify playlist won't remove it from the mirror. (Roon-side you can prune manually; true two-way mirroring would need playlist-item deletion, which is left out for now.)
 - **Matching is fuzzy** except when Spotify provides an ISRC (TIDAL is looked up by ISRC first). Unmatched items are logged and abandoned after 5 attempts — check `data/state.json` → `unmatched`.
 - **External APIs drift.** The TIDAL v2 (JSON:API) endpoint shapes and the unofficial Qobuz API are isolated in `src/providers/`; if a request 404s after an API change, that's the file to adjust. Pitchfork's RSS feeds (`pitchfork.com/rss/reviews/best/albums/`, `.../best/tracks/`) have been stable for years but are Condé Nast property — the parser lives in `src/sources/pitchfork.js`.
-- **Spotify is read-only** here and only used for public AD playlists; no Spotify login is required beyond app credentials.
+- **Spotify is read-only** here and only used for public AD playlists. Without API credentials the embed-page fallback is used, which Spotify could change without notice — if AD syncs suddenly fail, add free API credentials.
 
 ## Possible next steps
 

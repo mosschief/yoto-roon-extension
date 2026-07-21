@@ -2,7 +2,7 @@ import { log } from './log.js';
 import { pickBestAlbum, pickBestTrack } from './match.js';
 import { State } from './state.js';
 import { fetchBestNewMusic } from './sources/pitchfork.js';
-import { SpotifyClient } from './sources/spotify.js';
+import { SpotifySource } from './sources/spotify.js';
 import { QobuzProvider } from './providers/qobuz.js';
 import { TidalProvider } from './providers/tidal.js';
 
@@ -144,10 +144,11 @@ export async function runSync(config) {
     if (!ids.length) {
       log.warn('Aquarium Drunkard sync enabled but no spotifyPlaylistIds configured — skipping');
     } else {
-      const spotify = new SpotifyClient({
+      const spotify = new SpotifySource({
         clientId: config.env.spotifyClientId,
         clientSecret: config.env.spotifyClientSecret,
       });
+      log.info(`Reading Spotify playlists via ${spotify.hasApi ? 'the official API' : 'the public embed page (no Spotify credentials configured)'}`);
       const items = [];
       for (const pid of ids) {
         log.info(`Fetching Spotify playlist ${pid}...`);
