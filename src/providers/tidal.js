@@ -8,7 +8,7 @@ import { request } from '../http.js';
 const AUTHORIZE_URL = 'https://login.tidal.com/authorize';
 const TOKEN_URL = 'https://auth.tidal.com/v1/oauth2/token';
 const API = 'https://openapi.tidal.com/v2';
-const SCOPES = 'playlists.read playlists.write user.read';
+const SCOPES = 'playlists.read playlists.write user.read collection.read collection.write';
 const JSONAPI = 'application/vnd.api+json';
 const ADD_BATCH_SIZE = 20;
 
@@ -220,5 +220,22 @@ export class TidalProvider {
         json: { data: batch.map((id) => ({ id: String(id), type: 'tracks' })) },
       });
     }
+  }
+
+  async #currentUserId() {
+    if (this._userId) return this._userId;
+    const data = await this.#api('/users/me');
+    this._userId = data.data?.id;
+    if (!this._userId) throw new Error('Could not resolve the current TIDAL user id');
+    return this._userId;
+  }
+
+  /** Add whole albums to the user's collection (shows up in Roon as albums). */
+  async favoriteAlbums(albumIds) {
+    const userId = await this.#currentUserId();
+    await this.#api(`/userCollections/${userId}/relationships/albums`, {
+      method: 'POST',
+      json: { data: albumIds.map((id) => ({ id: String(id), type: 'albums' })) },
+    });
   }
 }

@@ -147,42 +147,112 @@ export async function syncItems({ provider, state, playlistKey, playlistName, de
   return { added, unmatched };
 }
 
+/**
+ * Add whole albums to the provider's favorites/collection (so they appear in
+ * Roon as albums, not a flat track list). Deduped via state like syncItems.
+ */
+export async function syncFavoriteAlbums({ provider, state, key, label, albums }) {
+  const pending = albums.filter((a) => !state.hasItem(key, a.key) && !state.isGivenUp(key, a.key));
+  if (!pending.length) {
+    log.info(`[${label}] no new albums (${albums.length} already favorited or exhausted)`);
+    return { added: 0, unmatched: 0 };
+  }
+  let added = 0;
+  let unmatched = 0;
+  for (const album of pending) {
+    try {
+      const candidates = await provider.searchAlbums(`${album.artist} ${album.album}`);
+      const best = pickBestAlbum(album, candidates);
+      if (!best) {
+        unmatched++;
+        const gaveUp = state.bumpUnmatched(key, album.key, album.label);
+        log.warn(`[${label}] no match for ${album.label}${gaveUp ? ' (giving up)' : ''}`);
+        continue;
+      }
+      await provider.favoriteAlbums([best.id]);
+      state.markAdded(key, album.key, { albumId: best.id, label: album.label });
+      added++;
+      log.info(`[${label}] favorited ${album.label}`);
+    } catch (err) {
+      log.error(`[${label}] failed on ${album.label}: ${err.message}`);
+    } finally {
+      state.save();
+    }
+  }
+  return { added, unmatched };
+}
+
 export async function runSync(config) {
   const provider = buildProvider(config);
   const state = State.load(config.dataDir);
 
   if (config.pitchfork?.enabled) {
-    const { includeAlbums = true, includeTracks = true, maxTracksPerAlbum = 0 } = config.pitchfork;
+    const pf = config.pitchfork;
+    const { includeAlbums = true, includeTracks = true, maxTracksPerAlbum = 0 } = pf;
     log.info('Fetching Pitchfork Best New Music feeds...');
     const bnm = await fetchBestNewMusic({ includeAlbums, includeTracks });
     log.info(`Pitchfork: ${bnm.albums.length} BNM albums, ${bnm.tracks.length} BNM tracks in feed`);
 
-    const items = [
-      ...bnm.tracks.map((t) => ({
+    // Best New Tracks -> a track playlist.
+    if (includeTracks && bnm.tracks.length) {
+      const items = bnm.tracks.map((t) => ({
         key: `pitchfork-track:${t.id}`,
         label: `${t.artist} — "${t.title}"`,
         kind: 'track',
         artist: t.artist,
         title: t.title,
-      })),
-      ...bnm.albums.map((a) => ({
-        key: `pitchfork-album:${a.id}`,
-        label: `${a.artist} — ${a.album} (album)`,
-        kind: 'album',
-        artist: a.artist,
-        album: a.album,
-      })),
-    ];
+      }));
+      await syncItems({
+        provider,
+        state,
+        playlistKey: 'pitchfork-tracks',
+        playlistName: pf.tracksPlaylistName || pf.playlistName || 'Pitchfork: Best New Tracks',
+        description: 'Auto-synced from Pitchfork Best New Tracks. github.com/mosschief/yoto-roon-extension',
+        items,
+      });
+    }
 
-    await syncItems({
-      provider,
-      state,
-      playlistKey: 'pitchfork-bnm',
-      playlistName: config.pitchfork.playlistName || 'Pitchfork: Best New Music',
-      description: 'Auto-synced from Pitchfork Best New Music. github.com/mosschief/yoto-roon-extension',
-      items,
-      maxTracksPerAlbum,
-    });
+    // Best New Albums -> favorited as whole albums (default), or expanded into
+    // a track playlist when albumMode is "tracks".
+    if (includeAlbums && bnm.albums.length) {
+      const albumMode = pf.albumMode || 'favorite';
+      const canFavorite = typeof provider.favoriteAlbums === 'function';
+      if (albumMode === 'favorite' && canFavorite) {
+        const albums = bnm.albums.map((a) => ({
+          key: `pitchfork-album:${a.id}`,
+          label: `${a.artist} — ${a.album}`,
+          artist: a.artist,
+          album: a.album,
+        }));
+        await syncFavoriteAlbums({
+          provider,
+          state,
+          key: 'pitchfork-albums-fav',
+          label: 'Pitchfork: Best New Albums',
+          albums,
+        });
+      } else {
+        if (albumMode === 'favorite' && !canFavorite) {
+          log.warn('Provider cannot favorite albums; expanding Best New Albums into a track playlist instead.');
+        }
+        const items = bnm.albums.map((a) => ({
+          key: `pitchfork-album:${a.id}`,
+          label: `${a.artist} — ${a.album} (album)`,
+          kind: 'album',
+          artist: a.artist,
+          album: a.album,
+        }));
+        await syncItems({
+          provider,
+          state,
+          playlistKey: 'pitchfork-albums',
+          playlistName: pf.albumsPlaylistName || 'Pitchfork: Best New Albums',
+          description: 'Auto-synced from Pitchfork Best New Albums. github.com/mosschief/yoto-roon-extension',
+          items,
+          maxTracksPerAlbum,
+        });
+      }
+    }
   }
 
   if (config.aquariumDrunkard?.enabled) {

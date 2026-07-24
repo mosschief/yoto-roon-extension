@@ -151,4 +151,12 @@ export class QobuzProvider {
       params: { playlist_id: playlistId, track_ids: trackIds.join(','), no_duplicate: 'true' },
     });
   }
+
+  /** Add whole albums to the account's favorites (shows up in Roon as albums). */
+  async favoriteAlbums(albumIds) {
+    await this.#call('favorite/create', {
+      method: 'POST',
+      params: { album_ids: albumIds.join(',') },
+    });
+  }
 }

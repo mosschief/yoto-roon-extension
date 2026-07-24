@@ -15,12 +15,13 @@ Pitchfork BNM RSS ─┐
 AD Spotify lists ──┘
 ```
 
-Two playlists are maintained:
+Playlists maintained:
 
 | Playlist | Source | Contents |
 |---|---|---|
-| Pitchfork: Best New Music | BNM albums + tracks RSS | BNM tracks, plus each BNM album expanded into its tracks |
-| Aquarium Drunkard | AD's Spotify playlists | every track, matched by ISRC where possible |
+| Pitchfork: Best New Tracks | Best New Tracks RSS | each BNM track |
+| Pitchfork: Best New Albums | Best New Albums RSS | each BNM album's tracks, grouped album-by-album (or favorited as whole albums — see `albumMode`) |
+| one per AD series (e.g. Radio Free Aquarium Drunkard) | AD's Spotify playlists | every track, matched by ISRC where possible |
 
 Syncing is **append-only with dedupe**: new picks are added, nothing is removed, and items that can't be matched are retried on later runs (up to 5 times). State lives in `data/state.json`.
 
@@ -101,10 +102,13 @@ instead of editing files):
 | `provider` | `PROVIDER` | `tidal` | `tidal` or `qobuz` |
 | `countryCode` | `COUNTRY_CODE` | `US` | TIDAL catalog country |
 | `loopIntervalHours` | `LOOP_INTERVAL_HOURS` | `12` | interval for `--loop` mode |
-| `pitchfork.enabled` | `PITCHFORK_ENABLED` | `true` | maintain the BNM playlist |
-| `pitchfork.playlistName` | `PITCHFORK_PLAYLIST_NAME` | `Pitchfork: Best New Music` | playlist name |
-| `pitchfork.includeAlbums` / `includeTracks` | `PITCHFORK_INCLUDE_ALBUMS` / `_TRACKS` | `true` | which BNM feeds to use |
-| `pitchfork.maxTracksPerAlbum` | `PITCHFORK_MAX_TRACKS_PER_ALBUM` | `0` (all) | cap tracks added per BNM album |
+| `pitchfork.enabled` | `PITCHFORK_ENABLED` | `true` | maintain the BNM playlists |
+| `pitchfork.includeTracks` | `PITCHFORK_INCLUDE_TRACKS` | `true` | maintain a Best New Tracks playlist |
+| `pitchfork.includeAlbums` | `PITCHFORK_INCLUDE_ALBUMS` | `true` | maintain a Best New Albums playlist (separate) |
+| `pitchfork.tracksPlaylistName` | `PITCHFORK_TRACKS_PLAYLIST_NAME` | `Pitchfork: Best New Tracks` | tracks playlist name |
+| `pitchfork.albumsPlaylistName` | `PITCHFORK_ALBUMS_PLAYLIST_NAME` | `Pitchfork: Best New Albums` | albums playlist name |
+| `pitchfork.albumMode` | `PITCHFORK_ALBUM_MODE` | `tracks` | `tracks` = separate playlist of album tracks; `favorite` = add whole albums to streaming Favorites |
+| `pitchfork.maxTracksPerAlbum` | `PITCHFORK_MAX_TRACKS_PER_ALBUM` | `0` (all) | in `tracks` mode, cap tracks per album |
 | `aquariumDrunkard.enabled` | `AD_ENABLED` | `true` | maintain the AD playlist |
 | `aquariumDrunkard.playlistName` | `AD_PLAYLIST_NAME` | `Aquarium Drunkard` | playlist name |
 | `aquariumDrunkard.autoDiscover` | `AD_AUTO_DISCOVER` | `true` | find AD playlists from their Spotify profile when no IDs are set |

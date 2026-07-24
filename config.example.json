@@ -4,9 +4,11 @@
   "loopIntervalHours": 12,
   "pitchfork": {
     "enabled": true,
-    "playlistName": "Pitchfork: Best New Music",
-    "includeAlbums": true,
     "includeTracks": true,
+    "includeAlbums": true,
+    "tracksPlaylistName": "Pitchfork: Best New Tracks",
+    "albumMode": "tracks",
+    "albumsPlaylistName": "Pitchfork: Best New Albums",
     "maxTracksPerAlbum": 0
   },
   "aquariumDrunkard": {

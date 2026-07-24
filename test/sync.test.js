@@ -5,7 +5,13 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { State } from '../src/state.js';
-import { deriveSeries, selectDiscoveredPlaylists, seriesKey, syncItems } from '../src/sync.js';
+import {
+  deriveSeries,
+  selectDiscoveredPlaylists,
+  seriesKey,
+  syncFavoriteAlbums,
+  syncItems,
+} from '../src/sync.js';
 
 test('deriveSeries strips dated/numbered editions and leaves one-offs intact', () => {
   assert.equal(deriveSeries('Radio Free Aquarium Drunkard :: May 2026'), 'Radio Free Aquarium Drunkard');
@@ -66,8 +72,31 @@ function fakeProvider() {
     async addTracks(playlistId, ids) {
       calls.added.push({ playlistId, ids });
     },
+    async favoriteAlbums(ids) {
+      calls.favorited = (calls.favorited ?? []).concat(ids);
+    },
   };
 }
+
+test('syncFavoriteAlbums favorites matched albums, dedupes, tracks unmatched', async () => {
+  const provider = fakeProvider();
+  const state = State.load(fs.mkdtempSync(path.join(os.tmpdir(), 'fav-test-')));
+  const albums = [
+    { key: 'al1', label: 'Album Band — Great Album', artist: 'Album Band', album: 'Great Album' },
+    { key: 'al2', label: 'Ghost — Nowhere', artist: 'Ghost', album: 'Nowhere' },
+  ];
+
+  const res = await syncFavoriteAlbums({ provider, state, key: 'k', label: 'BNM Albums', albums });
+  assert.equal(res.added, 1);
+  assert.equal(res.unmatched, 1);
+  assert.deepEqual(provider.calls.favorited, ['a1']);
+  assert.ok(state.hasItem('k', 'al1'));
+
+  // Re-run: matched one already favorited, no new favorites.
+  const res2 = await syncFavoriteAlbums({ provider, state, key: 'k', label: 'BNM Albums', albums });
+  assert.equal(res2.added, 0);
+  assert.deepEqual(provider.calls.favorited, ['a1']);
+});
 
 function tempState() {
   return State.load(fs.mkdtempSync(path.join(os.tmpdir(), 'sync-test-')));

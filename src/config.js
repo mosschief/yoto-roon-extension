@@ -41,10 +41,13 @@ function applyEnvOverrides(config) {
 
   const pf = (config.pitchfork ??= {});
   pf.enabled = envBool('PITCHFORK_ENABLED', pf.enabled);
-  pf.playlistName = envStr('PITCHFORK_PLAYLIST_NAME', pf.playlistName);
   pf.includeAlbums = envBool('PITCHFORK_INCLUDE_ALBUMS', pf.includeAlbums);
   pf.includeTracks = envBool('PITCHFORK_INCLUDE_TRACKS', pf.includeTracks);
   pf.maxTracksPerAlbum = envNum('PITCHFORK_MAX_TRACKS_PER_ALBUM', pf.maxTracksPerAlbum);
+  pf.albumMode = envStr('PITCHFORK_ALBUM_MODE', pf.albumMode || 'tracks');
+  pf.tracksPlaylistName = envStr('PITCHFORK_TRACKS_PLAYLIST_NAME', pf.tracksPlaylistName);
+  pf.albumsPlaylistName = envStr('PITCHFORK_ALBUMS_PLAYLIST_NAME', pf.albumsPlaylistName);
+  pf.playlistName = envStr('PITCHFORK_PLAYLIST_NAME', pf.playlistName); // legacy fallback for tracks
 
   const ad = (config.aquariumDrunkard ??= {});
   ad.enabled = envBool('AD_ENABLED', ad.enabled);
