@@ -33,12 +33,13 @@ by CI, and an Unraid template lives in [`unraid/roon-playlist-automation.xml`](u
    `roon-playlist-automation` from the **Select a template** dropdown (it
    appears under *User templates*).
 
-3. Fill in the fields — they map 1:1 to what the README describes:
-   - **Qobuz users** (simplest path): set `PROVIDER` to `qobuz` (under *Show more settings*) and fill in `QOBUZ_USERNAME` / `QOBUZ_PASSWORD` — your normal Qobuz account. No developer signup, no TIDAL, no Spotify account needed; the Qobuz app id is auto-discovered and AD playlists are read via Spotify's public embed page.
-   - **TIDAL users**: `TIDAL_CLIENT_ID` — from [developer.tidal.com/dashboard](https://developer.tidal.com/dashboard) (add `http://127.0.0.1:8976/callback` as a redirect URI in the TIDAL app).
-   - `AD_SPOTIFY_PLAYLIST_IDS` — comma-separated playlist IDs from [AD's Spotify profile](https://open.spotify.com/user/aquariumdrunkard).
-   - `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` — optional; only if you want the official Spotify API instead of the embed fallback (a free Spotify account suffices).
-   - Everything else (sync interval, playlist names, per-album track cap) is under *Show more settings* with sensible defaults.
+3. Fill in the fields (the template defaults to Qobuz, so TIDAL fields are
+   tucked under *Show more settings*):
+   - `QOBUZ_USERNAME` / `QOBUZ_PASSWORD` — your normal Qobuz account. No developer signup; the Qobuz app id is auto-discovered.
+   - `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` — a free app from [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard). With these, Aquarium Drunkard's playlists are **found automatically** — you don't list any IDs. (No Spotify login/account-linking, just the app's ID and secret.)
+   - `AD_SPOTIFY_PLAYLIST_IDS` — leave blank for auto-discovery. Only fill this if you want specific playlists instead; these are read even without Spotify credentials.
+   - **TIDAL instead of Qobuz:** set `PROVIDER=tidal` and fill `TIDAL_CLIENT_ID` (from [developer.tidal.com/dashboard](https://developer.tidal.com/dashboard), redirect URI `http://127.0.0.1:8976/callback`).
+   - Auto-discovery tuning (`AD_MAX_PLAYLISTS`, `AD_NAME_FILTER`) and everything else is under *Show more settings* with sensible defaults.
 
 4. Apply. The container starts in loop mode (sync on start, then every
    `LOOP_INTERVAL_HOURS`). **Qobuz users are done at this point** — no

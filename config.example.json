@@ -12,6 +12,10 @@
   "aquariumDrunkard": {
     "enabled": true,
     "playlistName": "Aquarium Drunkard",
+    "autoDiscover": true,
+    "spotifyUser": "aquariumdrunkard",
+    "nameFilter": "",
+    "maxPlaylists": 4,
     "spotifyPlaylistIds": []
   }
 }

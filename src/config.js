@@ -49,6 +49,10 @@ function applyEnvOverrides(config) {
   const ad = (config.aquariumDrunkard ??= {});
   ad.enabled = envBool('AD_ENABLED', ad.enabled);
   ad.playlistName = envStr('AD_PLAYLIST_NAME', ad.playlistName);
+  ad.autoDiscover = envBool('AD_AUTO_DISCOVER', ad.autoDiscover ?? true);
+  ad.spotifyUser = envStr('AD_SPOTIFY_USER', ad.spotifyUser || 'aquariumdrunkard');
+  ad.nameFilter = envStr('AD_NAME_FILTER', ad.nameFilter || '');
+  ad.maxPlaylists = envNum('AD_MAX_PLAYLISTS', ad.maxPlaylists ?? 4);
   const ids = envStr('AD_SPOTIFY_PLAYLIST_IDS', '');
   if (ids) ad.spotifyPlaylistIds = ids.split(',').map((s) => s.trim()).filter(Boolean);
 }

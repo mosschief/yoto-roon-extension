@@ -5,7 +5,27 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { State } from '../src/state.js';
-import { syncItems } from '../src/sync.js';
+import { selectDiscoveredPlaylists, syncItems } from '../src/sync.js';
+
+test('selectDiscoveredPlaylists filters by owner, name, non-empty, and caps count', () => {
+  const playlists = [
+    { id: 'a', name: 'Radio Free Aquarium Drunkard :: May', owner: 'aquariumdrunkard', trackCount: 30 },
+    { id: 'b', name: 'Radio Free Aquarium Drunkard :: Apr', owner: 'aquariumdrunkard', trackCount: 28 },
+    { id: 'c', name: 'Some Other List', owner: 'someoneelse', trackCount: 10 },
+    { id: 'd', name: 'Empty', owner: 'aquariumdrunkard', trackCount: 0 },
+    { id: 'e', name: 'Radio Free Aquarium Drunkard :: Mar', owner: 'aquariumdrunkard', trackCount: 25 },
+  ];
+
+  const byName = selectDiscoveredPlaylists(playlists, {
+    userId: 'aquariumdrunkard',
+    nameFilter: 'Radio Free',
+    max: 2,
+  });
+  assert.deepEqual(byName.map((p) => p.id), ['a', 'b']);
+
+  const noFilter = selectDiscoveredPlaylists(playlists, { userId: 'aquariumdrunkard', max: 10 });
+  assert.deepEqual(noFilter.map((p) => p.id), ['a', 'b', 'e']); // c wrong owner, d empty
+});
 
 function fakeProvider() {
   const calls = { created: [], added: [] };

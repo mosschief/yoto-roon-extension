@@ -35,6 +35,22 @@ async function ensurePlaylist(provider, state, playlistKey, name, description) {
   return id;
 }
 
+/**
+ * Choose which of a user's playlists to mirror. Applies an optional name regex
+ * filter, restricts to playlists actually owned by the user, and caps the
+ * count. Exported for tests.
+ */
+export function selectDiscoveredPlaylists(playlists, { userId, nameFilter, max } = {}) {
+  let picked = playlists.filter((p) => p.trackCount > 0);
+  if (userId) picked = picked.filter((p) => !p.owner || p.owner === userId);
+  if (nameFilter) {
+    const re = new RegExp(nameFilter, 'i');
+    picked = picked.filter((p) => re.test(p.name));
+  }
+  if (max && max > 0) picked = picked.slice(0, max);
+  return picked;
+}
+
 /** Resolve one wanted track to a provider track id (ISRC first, then fuzzy search). */
 async function resolveTrack(provider, want) {
   if (want.isrc) {
@@ -140,14 +156,35 @@ export async function runSync(config) {
   }
 
   if (config.aquariumDrunkard?.enabled) {
-    const ids = config.aquariumDrunkard.spotifyPlaylistIds ?? [];
+    const ad = config.aquariumDrunkard;
+    const spotify = new SpotifySource({
+      clientId: config.env.spotifyClientId,
+      clientSecret: config.env.spotifyClientSecret,
+    });
+
+    let ids = [...(ad.spotifyPlaylistIds ?? [])];
+
+    // Auto-discover from the AD Spotify user when no explicit IDs are given.
+    if (!ids.length && ad.autoDiscover !== false) {
+      const user = ad.spotifyUser || 'aquariumdrunkard';
+      try {
+        log.info(`Auto-discovering Aquarium Drunkard playlists from Spotify user "${user}"...`);
+        const all = await spotify.getUserPlaylists(user);
+        const picked = selectDiscoveredPlaylists(all, {
+          userId: user,
+          nameFilter: ad.nameFilter || '',
+          max: ad.maxPlaylists ?? 4,
+        });
+        ids = picked.map((p) => p.id);
+        log.info(`Discovered ${all.length} playlists, mirroring ${ids.length}: ${picked.map((p) => `"${p.name}"`).join(', ') || '(none matched)'}`);
+      } catch (err) {
+        log.warn(`Auto-discovery failed: ${err.message}`);
+      }
+    }
+
     if (!ids.length) {
-      log.warn('Aquarium Drunkard sync enabled but no spotifyPlaylistIds configured — skipping');
+      log.warn('Aquarium Drunkard: no playlists to sync (none discovered and none configured) — skipping');
     } else {
-      const spotify = new SpotifySource({
-        clientId: config.env.spotifyClientId,
-        clientSecret: config.env.spotifyClientSecret,
-      });
       log.info(`Reading Spotify playlists via ${spotify.hasApi ? 'the official API' : 'the public embed page (no Spotify credentials configured)'}`);
       const items = [];
       for (const pid of ids) {

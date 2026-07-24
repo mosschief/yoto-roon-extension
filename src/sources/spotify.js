@@ -25,6 +25,40 @@ export class SpotifySource {
     return this.hasApi ? this.#apiTracks(playlistId) : this.#embedTracks(playlistId);
   }
 
+  /**
+   * Public playlists owned by a Spotify user (e.g. "aquariumdrunkard"), newest
+   * first as the profile orders them. Requires API credentials — the user's
+   * playlist index isn't available through the credential-free embed path.
+   * Returns { id, name, owner, trackCount }.
+   */
+  async getUserPlaylists(userId) {
+    if (!this.hasApi) {
+      throw new Error(
+        'Auto-discovering Aquarium Drunkard playlists needs Spotify API credentials ' +
+          '(a free app at developer.spotify.com/dashboard). Set SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET, ' +
+          'or list playlist IDs manually.',
+      );
+    }
+    const token = await this.#getToken();
+    const playlists = [];
+    let url = `${API}/users/${encodeURIComponent(userId)}/playlists?limit=50`;
+    for (;;) {
+      const { data } = await request(url, { headers: { Authorization: `Bearer ${token}` } });
+      for (const p of data.items ?? []) {
+        if (!p?.id) continue;
+        playlists.push({
+          id: p.id,
+          name: p.name ?? '',
+          owner: p.owner?.id ?? '',
+          trackCount: p.tracks?.total ?? 0,
+        });
+      }
+      if (!data.next) break;
+      url = data.next;
+    }
+    return playlists;
+  }
+
   // ---- official API (client-credentials) --------------------------------
 
   async #getToken() {

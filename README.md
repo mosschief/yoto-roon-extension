@@ -44,21 +44,32 @@ cp config.example.json config.json
 
 **Qobuz:** set `"provider": "qobuz"` in `config.json` and fill in `QOBUZ_USERNAME` and `QOBUZ_PASSWORD` in `.env` — that's it. Qobuz has no open developer signup, so the required app id is auto-discovered from Qobuz's own web player on first run (and cached in `data/`); set `QOBUZ_APP_ID` manually only if that ever breaks. No TIDAL or Spotify account is needed in this mode.
 
-### 2. Aquarium Drunkard source (Spotify — credentials optional)
+### 2. Aquarium Drunkard source (Spotify)
 
-AD publishes its playlists on Spotify, but **you don't need a Spotify account**: without credentials the tool reads the public playlist via Spotify's embed page. For the more robust official API (also returns ISRCs, which improve TIDAL matching), create an app at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) — a free Spotify account is enough — and put its client ID/secret in `.env`.
+AD publishes its playlists on Spotify. There are two ways to feed them in:
 
-Either way, pick the AD playlists you want to mirror from [open.spotify.com/user/aquariumdrunkard](https://open.spotify.com/user/aquariumdrunkard) (they post new ones [on the site](https://aquariumdrunkard.com/category/spotify/)). Copy each playlist's ID (the part after `/playlist/` in its share URL) into `config.json`:
+- **Automatic (recommended):** leave `spotifyPlaylistIds` empty and the tool discovers AD's playlists straight from their [Spotify profile](https://open.spotify.com/user/aquariumdrunkard), mirroring the most recent few (including the monthly *Radio Free Aquarium Drunkard* mixtape). **This needs Spotify API credentials** — a free app from [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard), no personal login or account-linking, just a client ID/secret in `.env`. Enumerating a user's playlists isn't possible without them.
+- **Manual:** set `spotifyPlaylistIds` to specific playlist IDs (the part after `/playlist/` in a share URL). These are read even **without** any Spotify credentials, via Spotify's public embed page.
+
+Tune auto-discovery in `config.json`:
 
 ```json
 "aquariumDrunkard": {
   "enabled": true,
   "playlistName": "Aquarium Drunkard",
-  "spotifyPlaylistIds": ["5NIKBJAbWFkNkKQqSzcdzB"]
+  "autoDiscover": true,
+  "spotifyUser": "aquariumdrunkard",
+  "nameFilter": "",
+  "maxPlaylists": 4,
+  "spotifyPlaylistIds": []
 }
 ```
 
-Skip this (set `"enabled": false`) if you only want Pitchfork.
+- `maxPlaylists` — how many of AD's most recent playlists to mirror.
+- `nameFilter` — optional regex; e.g. `"Radio Free"` to mirror only the monthly mixtape series.
+- `spotifyPlaylistIds` — if set, these win and auto-discovery is skipped.
+
+Skip AD entirely (set `"enabled": false`) if you only want Pitchfork.
 
 ### 3. Run it
 
@@ -93,7 +104,11 @@ instead of editing files):
 | `pitchfork.maxTracksPerAlbum` | `PITCHFORK_MAX_TRACKS_PER_ALBUM` | `0` (all) | cap tracks added per BNM album |
 | `aquariumDrunkard.enabled` | `AD_ENABLED` | `true` | maintain the AD playlist |
 | `aquariumDrunkard.playlistName` | `AD_PLAYLIST_NAME` | `Aquarium Drunkard` | playlist name |
-| `aquariumDrunkard.spotifyPlaylistIds` | `AD_SPOTIFY_PLAYLIST_IDS` (comma-separated) | `[]` | AD playlists to mirror |
+| `aquariumDrunkard.autoDiscover` | `AD_AUTO_DISCOVER` | `true` | find AD playlists from their Spotify profile when no IDs are set |
+| `aquariumDrunkard.spotifyUser` | `AD_SPOTIFY_USER` | `aquariumdrunkard` | Spotify user to discover playlists from |
+| `aquariumDrunkard.maxPlaylists` | `AD_MAX_PLAYLISTS` | `4` | how many discovered playlists to mirror |
+| `aquariumDrunkard.nameFilter` | `AD_NAME_FILTER` | `""` | optional regex to filter discovered playlist names |
+| `aquariumDrunkard.spotifyPlaylistIds` | `AD_SPOTIFY_PLAYLIST_IDS` (comma-separated) | `[]` | explicit AD playlists (overrides discovery) |
 
 A prebuilt container image is published to
 `ghcr.io/mosschief/roon-playlist-automation` (see `Dockerfile` and
