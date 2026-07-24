@@ -15,15 +15,23 @@ by CI, and an Unraid template lives in [`unraid/roon-playlist-automation.xml`](u
 > github.com → your profile → Packages → `roon-playlist-automation` →
 > Package settings → Change visibility → Public.
 
-1. In Unraid, go to the **Docker** tab, scroll to the bottom, and add this to
-   **Template Repositories**, then Save:
+1. Install the template by copying it to Unraid's user-templates folder.
+   Open the Unraid web terminal (the `>_` icon, top right) and run:
 
-   ```
-   https://github.com/mosschief/yoto-roon-extension
+   ```sh
+   wget -O /boot/config/plugins/dockerMan/templates-user/roon-playlist-automation.xml \
+     "https://raw.githubusercontent.com/mosschief/yoto-roon-extension/refs/heads/claude/roon-plugin-playlist-automation-v3c80d/unraid/roon-playlist-automation.xml"
    ```
 
-2. Click **Add Container** and pick `roon-playlist-automation` from the
-   template dropdown (under *User templates*).
+   (This works on every Unraid version. Older 6.x releases alternatively had a
+   *Template Repositories* box at the bottom of the Docker tab where
+   `https://github.com/mosschief/yoto-roon-extension` could be added; newer
+   versions removed it in favor of Community Applications, so the file copy
+   above is the reliable route.)
+
+2. Go to the **Docker** tab, click **Add Container**, and pick
+   `roon-playlist-automation` from the **Select a template** dropdown (it
+   appears under *User templates*).
 
 3. Fill in the fields — they map 1:1 to what the README describes:
    - **Qobuz users** (simplest path): set `PROVIDER` to `qobuz` (under *Show more settings*) and fill in `QOBUZ_USERNAME` / `QOBUZ_PASSWORD` — your normal Qobuz account. No developer signup, no TIDAL, no Spotify account needed; the Qobuz app id is auto-discovered and AD playlists are read via Spotify's public embed page.
