@@ -5,7 +5,21 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { State } from '../src/state.js';
-import { selectDiscoveredPlaylists, syncItems } from '../src/sync.js';
+import { deriveSeries, selectDiscoveredPlaylists, seriesKey, syncItems } from '../src/sync.js';
+
+test('deriveSeries strips dated/numbered editions and leaves one-offs intact', () => {
+  assert.equal(deriveSeries('Radio Free Aquarium Drunkard :: May 2026'), 'Radio Free Aquarium Drunkard');
+  assert.equal(deriveSeries('Radio Free Aquarium Drunkard :: April 2026'), 'Radio Free Aquarium Drunkard');
+  assert.equal(deriveSeries('The Aquarium Drunkard Guide To Drag City: Vol. II'), 'The Aquarium Drunkard Guide To Drag City');
+  assert.equal(deriveSeries('Aquarium Drunkard 2025'), 'Aquarium Drunkard');
+  // one-off with a non-dated subtitle stays whole (its own series)
+  assert.equal(deriveSeries('Aquarium Drunkard Presents ‡ Satisfy Running'), 'Aquarium Drunkard Presents ‡ Satisfy Running');
+  // the two Radio Free editions collapse to the same stable key
+  assert.equal(
+    seriesKey(deriveSeries('Radio Free Aquarium Drunkard :: May 2026')),
+    seriesKey(deriveSeries('Radio Free Aquarium Drunkard :: March 2026')),
+  );
+});
 
 test('selectDiscoveredPlaylists filters by owner, name, non-empty, and caps count', () => {
   const playlists = [

@@ -35,6 +35,36 @@ async function ensurePlaylist(provider, state, playlistKey, name, description) {
   return id;
 }
 
+const MONTHS = 'january|february|march|april|may|june|july|august|september|october|november|december';
+const SEASONS = 'spring|summer|autumn|fall|winter';
+
+/**
+ * Reduce a playlist title to its series name by stripping a trailing dated or
+ * numbered edition marker, so successive editions group together:
+ *   "Radio Free Aquarium Drunkard :: May 2026" -> "Radio Free Aquarium Drunkard"
+ *   "AD Guide To Drag City: Vol. II"           -> "AD Guide To Drag City"
+ * Titles without such a marker (one-offs) are returned unchanged, i.e. each is
+ * its own series. Exported for tests.
+ */
+export function deriveSeries(name) {
+  let s = (name || '').trim();
+  const dc = s.indexOf('::'); // AD's standard dated-edition separator
+  if (dc !== -1) {
+    s = s.slice(0, dc);
+  } else {
+    s = s.replace(/\s*[:\-–—]?\s*(vol\.?|volume|part|pt\.?|no\.?|#)\s*[ivxlcdm0-9]+\s*$/i, '');
+    const tail = new RegExp(`\\s*[:\\-–—]?\\s*((${MONTHS}|${SEASONS})(\\s+\\d{4})?|\\d{4})\\s*$`, 'i');
+    s = s.replace(tail, '');
+  }
+  s = s.replace(/[\s:–—-]+$/, '').replace(/\s+/g, ' ').trim();
+  return s || (name || '').trim();
+}
+
+/** Stable state/playlist key for a series display name. */
+export function seriesKey(seriesName) {
+  return `ad-series:${seriesName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+}
+
 /**
  * Choose which of a user's playlists to mirror. Applies an optional name regex
  * filter, restricts to playlists actually owned by the user, and caps the
@@ -162,10 +192,13 @@ export async function runSync(config) {
       clientSecret: config.env.spotifyClientSecret,
     });
 
-    let ids = [...(ad.spotifyPlaylistIds ?? [])];
+    const fallbackName = ad.playlistName || 'Aquarium Drunkard';
+    // Sources carry a name so editions can be grouped into a series playlist.
+    // Explicit IDs have no known name, so they fall back to one combined list.
+    let sources = (ad.spotifyPlaylistIds ?? []).map((id) => ({ id, name: null }));
 
     // Auto-discover from the AD Spotify user when no explicit IDs are given.
-    if (!ids.length && ad.autoDiscover !== false) {
+    if (!sources.length && ad.autoDiscover !== false) {
       const user = ad.spotifyUser || 'aquariumdrunkard';
       try {
         log.info(`Auto-discovering Aquarium Drunkard playlists from Spotify user "${user}"...`);
@@ -175,24 +208,28 @@ export async function runSync(config) {
           nameFilter: ad.nameFilter || '',
           max: ad.maxPlaylists ?? 4,
         });
-        ids = picked.map((p) => p.id);
-        log.info(`Discovered ${all.length} playlists, mirroring ${ids.length}: ${picked.map((p) => `"${p.name}"`).join(', ') || '(none matched)'}`);
+        sources = picked.map((p) => ({ id: p.id, name: p.name }));
+        log.info(`Discovered ${all.length} playlists, mirroring ${sources.length}: ${picked.map((p) => `"${p.name}"`).join(', ') || '(none matched)'}`);
       } catch (err) {
         log.warn(`Auto-discovery failed: ${err.message}`);
       }
     }
 
-    if (!ids.length) {
+    if (!sources.length) {
       log.warn('Aquarium Drunkard: no playlists to sync (none discovered and none configured) — skipping');
     } else {
       log.info(`Reading Spotify playlists via ${spotify.hasApi ? 'the official API' : 'the public embed page (no Spotify credentials configured)'}`);
-      const items = [];
-      for (const pid of ids) {
-        log.info(`Fetching Spotify playlist ${pid}...`);
-        const tracks = await spotify.getPlaylistTracks(pid);
-        log.info(`Spotify ${pid}: ${tracks.length} tracks`);
+      // Group source playlists into one target playlist per series.
+      const groups = new Map();
+      for (const src of sources) {
+        const seriesName = src.name ? deriveSeries(src.name) : fallbackName;
+        const key = seriesKey(seriesName);
+        log.info(`Fetching Spotify playlist ${src.id}${src.name ? ` ("${src.name}")` : ''} → series "${seriesName}"...`);
+        const tracks = await spotify.getPlaylistTracks(src.id);
+        log.info(`Spotify ${src.id}: ${tracks.length} tracks`);
+        const group = groups.get(key) ?? { name: seriesName, items: [] };
         for (const t of tracks) {
-          items.push({
+          group.items.push({
             key: `spotify-track:${t.id}`,
             label: `${t.artist} — "${t.title}"`,
             kind: 'track',
@@ -201,15 +238,19 @@ export async function runSync(config) {
             isrc: t.isrc,
           });
         }
+        groups.set(key, group);
       }
-      await syncItems({
-        provider,
-        state,
-        playlistKey: 'aquarium-drunkard',
-        playlistName: config.aquariumDrunkard.playlistName || 'Aquarium Drunkard',
-        description: 'Auto-mirrored from Aquarium Drunkard Spotify playlists.',
-        items,
-      });
+
+      for (const [key, group] of groups) {
+        await syncItems({
+          provider,
+          state,
+          playlistKey: key,
+          playlistName: group.name,
+          description: 'Auto-mirrored from Aquarium Drunkard on Spotify.',
+          items: group.items,
+        });
+      }
     }
   }
 

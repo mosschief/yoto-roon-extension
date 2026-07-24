@@ -49,6 +49,8 @@ cp config.example.json config.json
 AD publishes its playlists on Spotify. There are two ways to feed them in:
 
 - **Automatic (recommended):** leave `spotifyPlaylistIds` empty and the tool discovers AD's playlists straight from their [Spotify profile](https://open.spotify.com/user/aquariumdrunkard), mirroring the most recent few (including the monthly *Radio Free Aquarium Drunkard* mixtape). **This needs Spotify API credentials** — a free app from [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard), no personal login or account-linking, just a client ID/secret in `.env`. Enumerating a user's playlists isn't possible without them.
+
+Discovered playlists are **grouped one playlist per series**: every dated edition of a series (e.g. *Radio Free Aquarium Drunkard :: May 2026*, *…:: June 2026*) flows into a single "Radio Free Aquarium Drunkard" playlist, while distinct one-offs each get their own. New editions of a series are appended to that series' playlist as they appear.
 - **Manual:** set `spotifyPlaylistIds` to specific playlist IDs (the part after `/playlist/` in a share URL). These are read even **without** any Spotify credentials, via Spotify's public embed page.
 
 Tune auto-discovery in `config.json`:
@@ -65,8 +67,9 @@ Tune auto-discovery in `config.json`:
 }
 ```
 
-- `maxPlaylists` — how many of AD's most recent playlists to mirror.
+- `maxPlaylists` — how many of AD's most recent source playlists to scan (these are then grouped into series playlists).
 - `nameFilter` — optional regex; e.g. `"Radio Free"` to mirror only the monthly mixtape series.
+- `playlistName` — used only as the single fallback list name when you set explicit `spotifyPlaylistIds` (whose series can't be inferred).
 - `spotifyPlaylistIds` — if set, these win and auto-discovery is skipped.
 
 Skip AD entirely (set `"enabled": false`) if you only want Pitchfork.
