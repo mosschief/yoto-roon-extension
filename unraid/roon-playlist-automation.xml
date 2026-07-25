@@ -9,7 +9,7 @@
   <Support>https://github.com/mosschief/yoto-roon-extension/issues</Support>
   <Project>https://github.com/mosschief/yoto-roon-extension</Project>
   <Overview>
-    Automatically maintains playlists in Roon from Pitchfork Best New Music and Aquarium Drunkard's Spotify playlists.
+    Automatically maintains playlists in Roon from Pitchfork's album/track reviews and Aquarium Drunkard's Spotify playlists.
     Roon's API cannot create playlists, so this syncs picks into a Qobuz (or TIDAL) playlist, which Roon then imports from your linked streaming account.
 
     Setup (Qobuz — default, simplest): just fill in QOBUZ_USERNAME and QOBUZ_PASSWORD (your normal Qobuz account). No developer accounts needed — the Qobuz app id is auto-discovered, and Aquarium Drunkard's playlists are found automatically from their Spotify profile. Start the container and you're done.
@@ -35,11 +35,11 @@
   <Config Name="AD_SPOTIFY_USER" Target="AD_SPOTIFY_USER" Default="aquariumdrunkard" Description="Spotify user whose playlists are auto-discovered." Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="AD_AUTO_DISCOVER" Target="AD_AUTO_DISCOVER" Default="true" Description="Auto-find AD playlists from their Spotify profile when AD_SPOTIFY_PLAYLIST_IDS is blank." Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="LOOP_INTERVAL_HOURS" Target="LOOP_INTERVAL_HOURS" Default="12" Description="Hours between syncs." Type="Variable" Display="advanced" Required="false" Mask="false"/>
-  <Config Name="PITCHFORK_ENABLED" Target="PITCHFORK_ENABLED" Default="true" Description="Maintain the Pitchfork Best New Music playlists." Type="Variable" Display="advanced" Required="false" Mask="false"/>
-  <Config Name="PITCHFORK_INCLUDE_TRACKS" Target="PITCHFORK_INCLUDE_TRACKS" Default="true" Description="Maintain a Best New Tracks playlist." Type="Variable" Display="advanced" Required="false" Mask="false"/>
-  <Config Name="PITCHFORK_INCLUDE_ALBUMS" Target="PITCHFORK_INCLUDE_ALBUMS" Default="true" Description="Maintain a Best New Albums playlist (separate from tracks)." Type="Variable" Display="advanced" Required="false" Mask="false"/>
-  <Config Name="PITCHFORK_TRACKS_PLAYLIST_NAME" Target="PITCHFORK_TRACKS_PLAYLIST_NAME" Default="Pitchfork: Best New Tracks" Description="Name of the Best New Tracks playlist." Type="Variable" Display="advanced" Required="false" Mask="false"/>
-  <Config Name="PITCHFORK_ALBUMS_PLAYLIST_NAME" Target="PITCHFORK_ALBUMS_PLAYLIST_NAME" Default="Pitchfork: Best New Albums" Description="Name of the Best New Albums playlist." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PITCHFORK_ENABLED" Target="PITCHFORK_ENABLED" Default="true" Description="Maintain the Pitchfork review playlists. (Pitchfork retired its Best-New-Music-only feed, so these track Pitchfork's album/track reviews.)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PITCHFORK_INCLUDE_TRACKS" Target="PITCHFORK_INCLUDE_TRACKS" Default="true" Description="Maintain a Pitchfork Track Reviews playlist." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PITCHFORK_INCLUDE_ALBUMS" Target="PITCHFORK_INCLUDE_ALBUMS" Default="true" Description="Maintain a Pitchfork Album Reviews playlist (separate from tracks)." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PITCHFORK_TRACKS_PLAYLIST_NAME" Target="PITCHFORK_TRACKS_PLAYLIST_NAME" Default="Pitchfork: Track Reviews" Description="Name of the track-reviews playlist." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PITCHFORK_ALBUMS_PLAYLIST_NAME" Target="PITCHFORK_ALBUMS_PLAYLIST_NAME" Default="Pitchfork: Album Reviews" Description="Name of the album-reviews playlist." Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="PITCHFORK_ALBUM_MODE" Target="PITCHFORK_ALBUM_MODE" Default="tracks" Description="How Best New Albums are added: 'tracks' = a separate playlist of each album's tracks (recommended); 'favorite' = add whole albums to your streaming Favorites/library (one shared collection)." Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="PITCHFORK_MAX_TRACKS_PER_ALBUM" Target="PITCHFORK_MAX_TRACKS_PER_ALBUM" Default="0" Description="In 'tracks' album mode, cap tracks added per album (0 = all)." Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="PITCHFORK_ALBUM_FEEDS" Target="PITCHFORK_ALBUM_FEEDS" Default="" Description="Optional override: comma-separated Pitchfork album RSS feed URLs, tried in order (first with items wins). Leave blank for built-in defaults." Type="Variable" Display="advanced" Required="false" Mask="false"/>

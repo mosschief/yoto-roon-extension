@@ -26,6 +26,14 @@ test('scoreTrack prefers exact matches and tolerates missing artists', () => {
   assert.ok(noArtists >= 0.85 && noArtists < 1);
 });
 
+test('scoreTrack matches on title alone when the wanted artist is unknown', () => {
+  const want = { artist: '', title: 'Little Miss Twain' };
+  const hit = scoreTrack(want, { title: 'Little Miss Twain', artists: ['Shania Twain'] });
+  const miss = scoreTrack(want, { title: 'Something Unrelated', artists: ['Shania Twain'] });
+  assert.equal(hit, 1);
+  assert.ok(miss < 0.5, `unrelated title scored ${miss}`);
+});
+
 test('pickBestTrack applies the threshold', () => {
   const want = { artist: 'Rosalía', title: 'Berghain' };
   const candidates = [

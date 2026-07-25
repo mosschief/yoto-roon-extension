@@ -2,7 +2,7 @@
 
 Automatically maintains playlists in **Roon** from two sources:
 
-- **Pitchfork Best New Music** — new BNM albums and tracks from Pitchfork's RSS feeds
+- **Pitchfork reviews** — newly reviewed albums and tracks from Pitchfork's RSS feeds
 - **Aquarium Drunkard** — a mirror of AD's public Spotify playlists
 
 ## How it works (and why it isn't a "real" Roon extension)
@@ -19,9 +19,11 @@ Playlists maintained:
 
 | Playlist | Source | Contents |
 |---|---|---|
-| Pitchfork: Best New Tracks | Best New Tracks RSS | each BNM track |
-| Pitchfork: Best New Albums | Best New Albums RSS | each BNM album's tracks, grouped album-by-album (or favorited as whole albums — see `albumMode`) |
+| Pitchfork: Track Reviews | Pitchfork track-reviews RSS | each reviewed track |
+| Pitchfork: Album Reviews | Pitchfork album-reviews RSS | each reviewed album's tracks, grouped album-by-album (or favorited as whole albums — see `albumMode`) |
 | one per AD series (e.g. Radio Free Aquarium Drunkard) | AD's Spotify playlists | every track, matched by ISRC where possible |
+
+> **Note on Pitchfork:** Pitchfork retired its Best-New-Music-only RSS feeds, so these track Pitchfork's general album/track **review** feeds (the feed no longer flags which picks are "Best New Music"). The artist is recovered from each review's URL since the feed title now carries only the release name.
 
 Syncing is **append-only with dedupe**: new picks are added, nothing is removed, and items that can't be matched are retried on later runs (up to 5 times). State lives in `data/state.json`.
 

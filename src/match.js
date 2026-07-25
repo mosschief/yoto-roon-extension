@@ -51,6 +51,9 @@ function fieldScore(want, got) {
  */
 export function scoreTrack(want, candidate) {
   const titleScore = fieldScore(want.title, candidate.title);
+  // When the wanted artist is unknown (e.g. Pitchfork feed gave us only the
+  // release name), match on title alone rather than penalizing for the gap.
+  if (!normalize(want.artist)) return titleScore;
   const artistNames = candidate.artists?.filter(Boolean) ?? [];
   if (!artistNames.length) return titleScore * 0.9;
   const artistScore = Math.max(...artistNames.map((a) => fieldScore(want.artist, a)), fieldScore(want.artist, artistNames.join(' ')));

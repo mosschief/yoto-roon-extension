@@ -6,9 +6,9 @@
     "enabled": true,
     "includeTracks": true,
     "includeAlbums": true,
-    "tracksPlaylistName": "Pitchfork: Best New Tracks",
+    "tracksPlaylistName": "Pitchfork: Track Reviews",
     "albumMode": "tracks",
-    "albumsPlaylistName": "Pitchfork: Best New Albums",
+    "albumsPlaylistName": "Pitchfork: Album Reviews",
     "maxTracksPerAlbum": 0
   },
   "aquariumDrunkard": {

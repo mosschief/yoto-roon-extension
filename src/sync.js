@@ -185,16 +185,16 @@ export async function syncFavoriteAlbums({ provider, state, key, label, albums }
 async function syncPitchfork(config, provider, state) {
   const pf = config.pitchfork;
   const { includeAlbums = true, includeTracks = true, maxTracksPerAlbum = 0 } = pf;
-  log.info('Fetching Pitchfork Best New Music feeds...');
+  log.info('Fetching Pitchfork review feeds...');
   const bnm = await fetchBestNewMusic({
     includeAlbums,
     includeTracks,
     ...(pf.albumFeeds?.length ? { albumFeeds: pf.albumFeeds } : {}),
     ...(pf.trackFeeds?.length ? { trackFeeds: pf.trackFeeds } : {}),
   });
-  log.info(`Pitchfork: ${bnm.albums.length} BNM albums, ${bnm.tracks.length} BNM tracks in feed`);
+  log.info(`Pitchfork: ${bnm.albums.length} album reviews, ${bnm.tracks.length} track reviews in feed`);
 
-  // Best New Tracks -> a track playlist.
+  // Track reviews -> a track playlist.
     if (includeTracks && bnm.tracks.length) {
       const items = bnm.tracks.map((t) => ({
         key: `pitchfork-track:${t.id}`,
@@ -207,16 +207,16 @@ async function syncPitchfork(config, provider, state) {
         provider,
         state,
         playlistKey: 'pitchfork-tracks',
-        playlistName: pf.tracksPlaylistName || pf.playlistName || 'Pitchfork: Best New Tracks',
-        description: 'Auto-synced from Pitchfork Best New Tracks. github.com/mosschief/yoto-roon-extension',
+        playlistName: pf.tracksPlaylistName || pf.playlistName || 'Pitchfork: Track Reviews',
+        description: 'Auto-synced from Pitchfork track reviews. github.com/mosschief/yoto-roon-extension',
         items,
       });
     }
 
-    // Best New Albums -> favorited as whole albums (default), or expanded into
-    // a track playlist when albumMode is "tracks".
+    // Album reviews -> a separate playlist of each album's tracks (default),
+    // or favorited as whole albums when albumMode is "favorite".
     if (includeAlbums && bnm.albums.length) {
-      const albumMode = pf.albumMode || 'favorite';
+      const albumMode = pf.albumMode || 'tracks';
       const canFavorite = typeof provider.favoriteAlbums === 'function';
       if (albumMode === 'favorite' && canFavorite) {
         const albums = bnm.albums.map((a) => ({
@@ -229,12 +229,12 @@ async function syncPitchfork(config, provider, state) {
           provider,
           state,
           key: 'pitchfork-albums-fav',
-          label: 'Pitchfork: Best New Albums',
+          label: 'Pitchfork: Album Reviews',
           albums,
         });
       } else {
         if (albumMode === 'favorite' && !canFavorite) {
-          log.warn('Provider cannot favorite albums; expanding Best New Albums into a track playlist instead.');
+          log.warn('Provider cannot favorite albums; expanding album reviews into a track playlist instead.');
         }
         const items = bnm.albums.map((a) => ({
           key: `pitchfork-album:${a.id}`,
@@ -247,8 +247,8 @@ async function syncPitchfork(config, provider, state) {
           provider,
           state,
           playlistKey: 'pitchfork-albums',
-          playlistName: pf.albumsPlaylistName || 'Pitchfork: Best New Albums',
-          description: 'Auto-synced from Pitchfork Best New Albums. github.com/mosschief/yoto-roon-extension',
+          playlistName: pf.albumsPlaylistName || 'Pitchfork: Album Reviews',
+          description: 'Auto-synced from Pitchfork album reviews. github.com/mosschief/yoto-roon-extension',
           items,
           maxTracksPerAlbum,
         });
