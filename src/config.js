@@ -45,6 +45,10 @@ function applyEnvOverrides(config) {
   pf.includeTracks = envBool('PITCHFORK_INCLUDE_TRACKS', pf.includeTracks);
   pf.maxTracksPerAlbum = envNum('PITCHFORK_MAX_TRACKS_PER_ALBUM', pf.maxTracksPerAlbum);
   pf.albumMode = envStr('PITCHFORK_ALBUM_MODE', pf.albumMode || 'tracks');
+  const albumFeeds = envStr('PITCHFORK_ALBUM_FEEDS', '');
+  if (albumFeeds) pf.albumFeeds = albumFeeds.split(',').map((s) => s.trim()).filter(Boolean);
+  const trackFeeds = envStr('PITCHFORK_TRACK_FEEDS', '');
+  if (trackFeeds) pf.trackFeeds = trackFeeds.split(',').map((s) => s.trim()).filter(Boolean);
   pf.tracksPlaylistName = envStr('PITCHFORK_TRACKS_PLAYLIST_NAME', pf.tracksPlaylistName);
   pf.albumsPlaylistName = envStr('PITCHFORK_ALBUMS_PLAYLIST_NAME', pf.albumsPlaylistName);
   pf.playlistName = envStr('PITCHFORK_PLAYLIST_NAME', pf.playlistName); // legacy fallback for tracks

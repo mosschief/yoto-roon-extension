@@ -182,18 +182,19 @@ export async function syncFavoriteAlbums({ provider, state, key, label, albums }
   return { added, unmatched };
 }
 
-export async function runSync(config) {
-  const provider = buildProvider(config);
-  const state = State.load(config.dataDir);
+async function syncPitchfork(config, provider, state) {
+  const pf = config.pitchfork;
+  const { includeAlbums = true, includeTracks = true, maxTracksPerAlbum = 0 } = pf;
+  log.info('Fetching Pitchfork Best New Music feeds...');
+  const bnm = await fetchBestNewMusic({
+    includeAlbums,
+    includeTracks,
+    ...(pf.albumFeeds?.length ? { albumFeeds: pf.albumFeeds } : {}),
+    ...(pf.trackFeeds?.length ? { trackFeeds: pf.trackFeeds } : {}),
+  });
+  log.info(`Pitchfork: ${bnm.albums.length} BNM albums, ${bnm.tracks.length} BNM tracks in feed`);
 
-  if (config.pitchfork?.enabled) {
-    const pf = config.pitchfork;
-    const { includeAlbums = true, includeTracks = true, maxTracksPerAlbum = 0 } = pf;
-    log.info('Fetching Pitchfork Best New Music feeds...');
-    const bnm = await fetchBestNewMusic({ includeAlbums, includeTracks });
-    log.info(`Pitchfork: ${bnm.albums.length} BNM albums, ${bnm.tracks.length} BNM tracks in feed`);
-
-    // Best New Tracks -> a track playlist.
+  // Best New Tracks -> a track playlist.
     if (includeTracks && bnm.tracks.length) {
       const items = bnm.tracks.map((t) => ({
         key: `pitchfork-track:${t.id}`,
@@ -255,8 +256,9 @@ export async function runSync(config) {
     }
   }
 
-  if (config.aquariumDrunkard?.enabled) {
-    const ad = config.aquariumDrunkard;
+async function syncAquariumDrunkard(config, provider, state) {
+  const ad = config.aquariumDrunkard;
+  {
     const spotify = new SpotifySource({
       clientId: config.env.spotifyClientId,
       clientSecret: config.env.spotifyClientSecret,
@@ -321,6 +323,29 @@ export async function runSync(config) {
           items: group.items,
         });
       }
+    }
+  }
+}
+
+export async function runSync(config) {
+  const provider = buildProvider(config);
+  const state = State.load(config.dataDir);
+
+  // Each source is isolated: a failure in one (e.g. a moved Pitchfork feed)
+  // is logged but does not prevent the others from syncing.
+  if (config.pitchfork?.enabled) {
+    try {
+      await syncPitchfork(config, provider, state);
+    } catch (err) {
+      log.error(`Pitchfork sync failed: ${err.message}`);
+    }
+  }
+
+  if (config.aquariumDrunkard?.enabled) {
+    try {
+      await syncAquariumDrunkard(config, provider, state);
+    } catch (err) {
+      log.error(`Aquarium Drunkard sync failed: ${err.message}`);
     }
   }
 
